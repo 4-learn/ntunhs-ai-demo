@@ -1,0 +1,22 @@
+# 製造組：精工五金 line1 螺絲瑕疵（V28 管線讀這份）。
+# 示意：模型欄位暫用 YOLO 權重，V28 定版後替換成 V28 的模型檔、hash 與門檻。
+app: defect-line1
+release: "2026.01"
+source: defect
+site: 精工五金
+model:
+  name: yolo11n
+  version: "8.4.173"
+  path: models/yolo11n.pt       # 示意：V28 的 PatchCore 記憶庫檔上線後換成它
+  sha256_12: 0ebbc80d4a76
+threshold:
+  value: 0.62
+  chosen_on: V12 驗證集（每類 test 瑕疵固定取 10 張，seed 0）＋校正良品
+  rule: 成本 20×漏報＋1×誤報 最低
+  approved_by: 王課長
+  approved_on: 2026-01-09
+cooldown_s: 0                   # 每顆工件都要判
+cameras:
+  - {id: line1cam1, prefix: line1cam1, where: 一號線輸送帶上方}
+api_url: http://127.0.0.1:8000
+log_path: /tmp/ntunhs/V32/defect-line1.jsonl

@@ -1,0 +1,29 @@
+# 健康組：松年本館跌倒監測（V29 管線讀這份）。改任何一個值都要走 V32 的上線清單。
+# 模型與門檻抄自 P16 定版卡 config/fall.yaml（由 P16-pose-eval/build_fall_model.py 產生）；
+# 啟動自檢會重算模型 hash，並比對定版卡，三者不一致就拒絕啟動。
+app: fall-monitor
+release: "2026.01"
+source: pose
+site: 松年本館
+model:
+  name: fall-hgb
+  version: "2026.01"
+  path: models/fall-hgb.joblib      # 相對於 demo/
+  sha256_12: 05ba1c2d31cf
+  card: config/fall.yaml            # P16 定版卡
+threshold:
+  value: 0.95
+  chosen_on: train S01–S18 依受試者 5 折 out-of-fold 序列分數（StratifiedGroupKFold, random_state=0）
+  rule: 成本 10×漏報＋1×誤報 最低；門檻格點 0.05–0.95、間隔 0.05；同成本取較低門檻
+  approved_by: 林護理長             # 定版卡上是「待林護理長核准」；上線前核准後填在這裡
+  approved_on: 2026-01-09
+cooldown_s: 60                      # V22
+cameras:
+  - {id: cam1, prefix: s1cam1, where: 本館寢室（平視）}
+  - {id: cam2, prefix: s1cam2, where: 本館走廊（高角落）}
+  - {id: cam3, prefix: s1cam3, where: 本館交誼廳（側面）}
+notify:                             # V30 通知分級
+  push_score: 0.98
+  escalate_min: 5
+api_url: http://127.0.0.1:8000      # 事件 API（V27）
+log_path: /tmp/ntunhs/V32/fall-monitor.jsonl

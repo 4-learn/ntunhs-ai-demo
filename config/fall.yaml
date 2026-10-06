@@ -1,0 +1,53 @@
+# P16 定版：跌倒偵測模型與門檻（V29 讀這份）。由 P16-pose-eval/build_fall_model.py 產生，不要手改。
+app: fall-monitor
+release: '2026.01'
+model:
+  name: fall-hgb
+  version: '2026.01'
+  path: models/fall-hgb.joblib
+  sha256_12: 05ba1c2d31cf
+  sklearn: 1.9.1
+  estimator: HistGradientBoostingClassifier(random_state=0)
+  omp_num_threads: 1
+  features:
+  - torso_angle
+  - aspect
+  - hip_height
+  - head_hip_dy
+  - knee_angle
+  - hip_angle
+  - mean_conf
+  - d_torso_angle
+  - d_hip_y
+  - max_hip_speed
+  feature_fn: common.window_features
+  label: is_fall_seq==1 且 fall_frame <= frame < fall_frame+15
+  sequence_score: 序列內每格 predict_proba[:, 1] 的最大值
+  trained_on:
+    subjects: S01–S18
+    sequences: 252
+    data: data/pose/poses.csv
+    data_sha256_12: 70a69e05d643
+threshold:
+  value: 0.95
+  chosen_on: train S01–S18 依受試者 5 折 out-of-fold 序列分數（StratifiedGroupKFold, random_state=0）
+  rule: 成本 10×漏報＋1×誤報 最低；門檻格點 0.05–0.95、間隔 0.05；同成本取較低門檻
+  approved_by: 待林護理長核准
+validation:
+  set: train out-of-fold（37 段跌倒、215 段非跌倒）
+  tp: 36
+  fn: 1
+  fp: 3
+  cost: 13
+  precision: 0.923
+  recall: 0.973
+test:
+  set: S19–S24（84 段，跌倒 11 段）
+  opened: 2026-10-06，門檻決定之後打開一次
+  tp: 11
+  fn: 0
+  fp: 1
+  cost: 1
+  precision: 0.917
+  recall: 1.0
+  note: 唯一的誤報 SQ0306 標成 lie_bed，實際動作是跌倒（標註錯誤）；不因此改門檻或模型

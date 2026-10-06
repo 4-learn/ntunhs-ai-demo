@@ -1,0 +1,7 @@
+cache/
+runs/
+__pycache__/
+*.onnx
+# MVTec AD（CC BY-NC-SA 4.0）衍生物不進 repo：教師以 tools/ 自行產生
+models/defect-*
+V35-handoff/handoff/defect/

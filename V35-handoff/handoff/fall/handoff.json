@@ -1,0 +1,766 @@
+{
+ "title": "松年長照中心 跌倒監測 交接包（影像 AI 課 → 松年／維運）",
+ "version": "2026.01",
+ "privacy": {
+  "stored": "只存 17 點骨架（x, y, 信心）與事件 JSON；影像在 YOLO-pose 推論後即丟棄",
+  "event_has_image": false,
+  "residual_risk": "相對身高、面向等可部分認出受試者（P18 實測）；camera_id＋event_time 可對照排班推出是誰",
+  "retention": "待松年長照中心依個資法與機構規定決定（交接時尚未訂定）"
+ },
+ "data": {
+  "file": "data/pose/poses.csv",
+  "sha256": "70a69e05d64398f9d3e6cf41cfddc5c4b924779c20272e07da060b14e00cfdf8",
+  "synthetic": true,
+  "fps": 10,
+  "split": {
+   "train": "S01–S18",
+   "test": "S19–S24",
+   "validation": "train 內 StratifiedGroupKFold(5, shuffle=True, random_state=0), groups=subject_id"
+  }
+ },
+ "eval_set": {
+  "subjects": [
+   "S19",
+   "S20",
+   "S21",
+   "S22",
+   "S23",
+   "S24"
+  ],
+  "sequences": 84,
+  "falls": 11,
+  "list_format": "每行「seq_id,is_fall_seq」，依 seq_id 排序，以 \\n 連接",
+  "list_sha256": "e7f41387b842f8471524712fc9ae4c548d202b6dbeb7310234a08cea9b99f29d",
+  "opened": "P16 打開一次（2026-10-06）；V29、V33 以同一份重跑對帳，不據此調整"
+ },
+ "labeling_rules": {
+  "unit": "一段序列（40 格、4 秒）＝一個標註單位；is_fall_seq 為序列標籤",
+  "activities": [
+   "walk",
+   "stand",
+   "sit",
+   "sit_down",
+   "bend_pick",
+   "fall",
+   "lie_bed"
+  ],
+  "fall": "從站立或行走中失去平衡、在 2 秒內倒到地面（躺平或坐地都算）",
+  "not_fall": "自己躺到床上（lie_bed）、自己坐下（sit_down，再快也不算）、彎腰或蹲下撿東西（bend_pick）",
+  "fall_frame": "軀幹開始倒下的第一格；非跌倒序列為 -1",
+  "posture": "每格四類 standing/sitting/bending/lying；轉換中以「到目標姿勢一半以上」為界",
+  "model_target": "is_fall_seq==1 且 fall_frame <= frame < fall_frame+15（跌倒開始 1.5 秒內）",
+  "keypoint_conf_min": 0.3,
+  "window_frames": 10
+ },
+ "known_label_errors": [
+  {
+   "seq_id": "SQ0084",
+   "set": "train",
+   "labeled": "fall",
+   "likely": "lie_bed",
+   "why": "fall_frame=-1、40 格皆 lying、沒有倒下的動作"
+  },
+  {
+   "seq_id": "SQ0306",
+   "set": "test",
+   "labeled": "lie_bed",
+   "likely": "fall",
+   "why": "前 12 格站立，軀幹約 1 秒內由 0 度轉到 80 度以上"
+  }
+ ],
+ "model": {
+  "name": "fall-hgb",
+  "version": "2026.01",
+  "path": "models/fall-hgb.joblib",
+  "sha256_12": "05ba1c2d31cf",
+  "sklearn": "1.9.1",
+  "features": [
+   "torso_angle",
+   "aspect",
+   "hip_height",
+   "head_hip_dy",
+   "knee_angle",
+   "hip_angle",
+   "mean_conf",
+   "d_torso_angle",
+   "d_hip_y",
+   "max_hip_speed"
+  ],
+  "feature_fn": "common.window_features",
+  "label": "is_fall_seq==1 且 fall_frame <= frame < fall_frame+15",
+  "sequence_score": "序列內每格 predict_proba[:, 1] 的最大值"
+ },
+ "threshold": {
+  "value": 0.95,
+  "chosen_on": "train S01–S18 依受試者 5 折 out-of-fold 序列分數（StratifiedGroupKFold, random_state=0）",
+  "rule": "成本 10×漏報＋1×誤報 最低；門檻格點 0.05–0.95、間隔 0.05；同成本取較低門檻",
+  "approved_by": "林護理長",
+  "approved_on": "2026-01-09"
+ },
+ "scores": {
+  "validation_oof": {
+   "tp": 36,
+   "fn": 1,
+   "fp": 3,
+   "precision": 0.923,
+   "recall": 0.973
+  },
+  "test": {
+   "tp": 11,
+   "fn": 0,
+   "fp": 1,
+   "cost": 1,
+   "precision": 0.917,
+   "recall": 1.0
+  },
+  "test_per_sequence": [
+   {
+    "seq_id": "SQ0253",
+    "y": 0,
+    "activity": "walk",
+    "camera_id": "cam3",
+    "score": 0.1358
+   },
+   {
+    "seq_id": "SQ0254",
+    "y": 0,
+    "activity": "walk",
+    "camera_id": "cam1",
+    "score": 0.0285
+   },
+   {
+    "seq_id": "SQ0255",
+    "y": 0,
+    "activity": "stand",
+    "camera_id": "cam1",
+    "score": 0.1156
+   },
+   {
+    "seq_id": "SQ0256",
+    "y": 0,
+    "activity": "stand",
+    "camera_id": "cam1",
+    "score": 0.0232
+   },
+   {
+    "seq_id": "SQ0257",
+    "y": 0,
+    "activity": "sit",
+    "camera_id": "cam1",
+    "score": 0.0332
+   },
+   {
+    "seq_id": "SQ0258",
+    "y": 0,
+    "activity": "sit",
+    "camera_id": "cam2",
+    "score": 0.0018
+   },
+   {
+    "seq_id": "SQ0259",
+    "y": 0,
+    "activity": "sit_down",
+    "camera_id": "cam2",
+    "score": 0.2323
+   },
+   {
+    "seq_id": "SQ0260",
+    "y": 0,
+    "activity": "sit_down",
+    "camera_id": "cam2",
+    "score": 0.0296
+   },
+   {
+    "seq_id": "SQ0261",
+    "y": 0,
+    "activity": "bend_pick",
+    "camera_id": "cam3",
+    "score": 0.1572
+   },
+   {
+    "seq_id": "SQ0262",
+    "y": 0,
+    "activity": "bend_pick",
+    "camera_id": "cam2",
+    "score": 0.0178
+   },
+   {
+    "seq_id": "SQ0263",
+    "y": 1,
+    "activity": "fall",
+    "camera_id": "cam1",
+    "score": 0.9934
+   },
+   {
+    "seq_id": "SQ0264",
+    "y": 1,
+    "activity": "fall",
+    "camera_id": "cam2",
+    "score": 0.993
+   },
+   {
+    "seq_id": "SQ0265",
+    "y": 0,
+    "activity": "lie_bed",
+    "camera_id": "cam1",
+    "score": 0.0282
+   },
+   {
+    "seq_id": "SQ0266",
+    "y": 0,
+    "activity": "lie_bed",
+    "camera_id": "cam1",
+    "score": 0.0965
+   },
+   {
+    "seq_id": "SQ0267",
+    "y": 0,
+    "activity": "walk",
+    "camera_id": "cam2",
+    "score": 0.5787
+   },
+   {
+    "seq_id": "SQ0268",
+    "y": 0,
+    "activity": "walk",
+    "camera_id": "cam2",
+    "score": 0.0592
+   },
+   {
+    "seq_id": "SQ0269",
+    "y": 0,
+    "activity": "stand",
+    "camera_id": "cam3",
+    "score": 0.2704
+   },
+   {
+    "seq_id": "SQ0270",
+    "y": 0,
+    "activity": "stand",
+    "camera_id": "cam2",
+    "score": 0.0575
+   },
+   {
+    "seq_id": "SQ0271",
+    "y": 0,
+    "activity": "sit",
+    "camera_id": "cam2",
+    "score": 0.0021
+   },
+   {
+    "seq_id": "SQ0272",
+    "y": 0,
+    "activity": "sit",
+    "camera_id": "cam3",
+    "score": 0.0109
+   },
+   {
+    "seq_id": "SQ0273",
+    "y": 0,
+    "activity": "sit_down",
+    "camera_id": "cam2",
+    "score": 0.2112
+   },
+   {
+    "seq_id": "SQ0274",
+    "y": 0,
+    "activity": "sit_down",
+    "camera_id": "cam1",
+    "score": 0.0997
+   },
+   {
+    "seq_id": "SQ0275",
+    "y": 0,
+    "activity": "bend_pick",
+    "camera_id": "cam2",
+    "score": 0.0161
+   },
+   {
+    "seq_id": "SQ0276",
+    "y": 0,
+    "activity": "bend_pick",
+    "camera_id": "cam2",
+    "score": 0.0635
+   },
+   {
+    "seq_id": "SQ0277",
+    "y": 1,
+    "activity": "fall",
+    "camera_id": "cam2",
+    "score": 0.9927
+   },
+   {
+    "seq_id": "SQ0278",
+    "y": 1,
+    "activity": "fall",
+    "camera_id": "cam2",
+    "score": 0.9928
+   },
+   {
+    "seq_id": "SQ0279",
+    "y": 0,
+    "activity": "lie_bed",
+    "camera_id": "cam1",
+    "score": 0.0065
+   },
+   {
+    "seq_id": "SQ0280",
+    "y": 0,
+    "activity": "lie_bed",
+    "camera_id": "cam1",
+    "score": 0.0484
+   },
+   {
+    "seq_id": "SQ0281",
+    "y": 0,
+    "activity": "walk",
+    "camera_id": "cam3",
+    "score": 0.0714
+   },
+   {
+    "seq_id": "SQ0282",
+    "y": 0,
+    "activity": "walk",
+    "camera_id": "cam3",
+    "score": 0.0587
+   },
+   {
+    "seq_id": "SQ0283",
+    "y": 0,
+    "activity": "stand",
+    "camera_id": "cam2",
+    "score": 0.088
+   },
+   {
+    "seq_id": "SQ0284",
+    "y": 0,
+    "activity": "stand",
+    "camera_id": "cam1",
+    "score": 0.0162
+   },
+   {
+    "seq_id": "SQ0285",
+    "y": 0,
+    "activity": "sit",
+    "camera_id": "cam3",
+    "score": 0.0007
+   },
+   {
+    "seq_id": "SQ0286",
+    "y": 0,
+    "activity": "sit",
+    "camera_id": "cam3",
+    "score": 0.0018
+   },
+   {
+    "seq_id": "SQ0287",
+    "y": 0,
+    "activity": "sit_down",
+    "camera_id": "cam3",
+    "score": 0.6367
+   },
+   {
+    "seq_id": "SQ0288",
+    "y": 0,
+    "activity": "sit_down",
+    "camera_id": "cam3",
+    "score": 0.3131
+   },
+   {
+    "seq_id": "SQ0289",
+    "y": 0,
+    "activity": "bend_pick",
+    "camera_id": "cam1",
+    "score": 0.0226
+   },
+   {
+    "seq_id": "SQ0290",
+    "y": 0,
+    "activity": "bend_pick",
+    "camera_id": "cam1",
+    "score": 0.0233
+   },
+   {
+    "seq_id": "SQ0291",
+    "y": 1,
+    "activity": "fall",
+    "camera_id": "cam3",
+    "score": 0.9934
+   },
+   {
+    "seq_id": "SQ0292",
+    "y": 1,
+    "activity": "fall",
+    "camera_id": "cam1",
+    "score": 0.9934
+   },
+   {
+    "seq_id": "SQ0293",
+    "y": 0,
+    "activity": "lie_bed",
+    "camera_id": "cam1",
+    "score": 0.1126
+   },
+   {
+    "seq_id": "SQ0294",
+    "y": 0,
+    "activity": "lie_bed",
+    "camera_id": "cam1",
+    "score": 0.1493
+   },
+   {
+    "seq_id": "SQ0295",
+    "y": 0,
+    "activity": "walk",
+    "camera_id": "cam1",
+    "score": 0.0263
+   },
+   {
+    "seq_id": "SQ0296",
+    "y": 0,
+    "activity": "walk",
+    "camera_id": "cam3",
+    "score": 0.1008
+   },
+   {
+    "seq_id": "SQ0297",
+    "y": 0,
+    "activity": "stand",
+    "camera_id": "cam3",
+    "score": 0.0855
+   },
+   {
+    "seq_id": "SQ0298",
+    "y": 0,
+    "activity": "stand",
+    "camera_id": "cam3",
+    "score": 0.0679
+   },
+   {
+    "seq_id": "SQ0299",
+    "y": 0,
+    "activity": "sit",
+    "camera_id": "cam1",
+    "score": 0.0008
+   },
+   {
+    "seq_id": "SQ0300",
+    "y": 0,
+    "activity": "sit",
+    "camera_id": "cam2",
+    "score": 0.0026
+   },
+   {
+    "seq_id": "SQ0301",
+    "y": 0,
+    "activity": "sit_down",
+    "camera_id": "cam2",
+    "score": 0.1165
+   },
+   {
+    "seq_id": "SQ0302",
+    "y": 0,
+    "activity": "sit_down",
+    "camera_id": "cam2",
+    "score": 0.6264
+   },
+   {
+    "seq_id": "SQ0303",
+    "y": 0,
+    "activity": "bend_pick",
+    "camera_id": "cam2",
+    "score": 0.0246
+   },
+   {
+    "seq_id": "SQ0304",
+    "y": 0,
+    "activity": "bend_pick",
+    "camera_id": "cam2",
+    "score": 0.5023
+   },
+   {
+    "seq_id": "SQ0305",
+    "y": 1,
+    "activity": "fall",
+    "camera_id": "cam1",
+    "score": 0.9934
+   },
+   {
+    "seq_id": "SQ0306",
+    "y": 0,
+    "activity": "lie_bed",
+    "camera_id": "cam1",
+    "score": 0.9934
+   },
+   {
+    "seq_id": "SQ0307",
+    "y": 0,
+    "activity": "lie_bed",
+    "camera_id": "cam1",
+    "score": 0.0436
+   },
+   {
+    "seq_id": "SQ0308",
+    "y": 0,
+    "activity": "lie_bed",
+    "camera_id": "cam1",
+    "score": 0.5452
+   },
+   {
+    "seq_id": "SQ0309",
+    "y": 0,
+    "activity": "walk",
+    "camera_id": "cam3",
+    "score": 0.067
+   },
+   {
+    "seq_id": "SQ0310",
+    "y": 0,
+    "activity": "walk",
+    "camera_id": "cam2",
+    "score": 0.1419
+   },
+   {
+    "seq_id": "SQ0311",
+    "y": 0,
+    "activity": "stand",
+    "camera_id": "cam2",
+    "score": 0.0171
+   },
+   {
+    "seq_id": "SQ0312",
+    "y": 0,
+    "activity": "stand",
+    "camera_id": "cam3",
+    "score": 0.0315
+   },
+   {
+    "seq_id": "SQ0313",
+    "y": 0,
+    "activity": "sit",
+    "camera_id": "cam2",
+    "score": 0.001
+   },
+   {
+    "seq_id": "SQ0314",
+    "y": 0,
+    "activity": "sit",
+    "camera_id": "cam2",
+    "score": 0.0606
+   },
+   {
+    "seq_id": "SQ0315",
+    "y": 0,
+    "activity": "sit_down",
+    "camera_id": "cam2",
+    "score": 0.1412
+   },
+   {
+    "seq_id": "SQ0316",
+    "y": 0,
+    "activity": "sit_down",
+    "camera_id": "cam2",
+    "score": 0.0223
+   },
+   {
+    "seq_id": "SQ0317",
+    "y": 0,
+    "activity": "bend_pick",
+    "camera_id": "cam2",
+    "score": 0.0109
+   },
+   {
+    "seq_id": "SQ0318",
+    "y": 0,
+    "activity": "bend_pick",
+    "camera_id": "cam1",
+    "score": 0.0092
+   },
+   {
+    "seq_id": "SQ0319",
+    "y": 1,
+    "activity": "fall",
+    "camera_id": "cam1",
+    "score": 0.9934
+   },
+   {
+    "seq_id": "SQ0320",
+    "y": 1,
+    "activity": "fall",
+    "camera_id": "cam1",
+    "score": 0.9934
+   },
+   {
+    "seq_id": "SQ0321",
+    "y": 0,
+    "activity": "lie_bed",
+    "camera_id": "cam1",
+    "score": 0.0146
+   },
+   {
+    "seq_id": "SQ0322",
+    "y": 0,
+    "activity": "lie_bed",
+    "camera_id": "cam1",
+    "score": 0.0145
+   },
+   {
+    "seq_id": "SQ0323",
+    "y": 0,
+    "activity": "walk",
+    "camera_id": "cam1",
+    "score": 0.0106
+   },
+   {
+    "seq_id": "SQ0324",
+    "y": 0,
+    "activity": "walk",
+    "camera_id": "cam3",
+    "score": 0.4065
+   },
+   {
+    "seq_id": "SQ0325",
+    "y": 0,
+    "activity": "stand",
+    "camera_id": "cam2",
+    "score": 0.0259
+   },
+   {
+    "seq_id": "SQ0326",
+    "y": 0,
+    "activity": "stand",
+    "camera_id": "cam3",
+    "score": 0.0212
+   },
+   {
+    "seq_id": "SQ0327",
+    "y": 0,
+    "activity": "sit",
+    "camera_id": "cam1",
+    "score": 0.0007
+   },
+   {
+    "seq_id": "SQ0328",
+    "y": 0,
+    "activity": "sit",
+    "camera_id": "cam3",
+    "score": 0.0009
+   },
+   {
+    "seq_id": "SQ0329",
+    "y": 0,
+    "activity": "sit_down",
+    "camera_id": "cam3",
+    "score": 0.3937
+   },
+   {
+    "seq_id": "SQ0330",
+    "y": 0,
+    "activity": "sit_down",
+    "camera_id": "cam3",
+    "score": 0.0155
+   },
+   {
+    "seq_id": "SQ0331",
+    "y": 0,
+    "activity": "bend_pick",
+    "camera_id": "cam2",
+    "score": 0.5912
+   },
+   {
+    "seq_id": "SQ0332",
+    "y": 0,
+    "activity": "bend_pick",
+    "camera_id": "cam2",
+    "score": 0.0365
+   },
+   {
+    "seq_id": "SQ0333",
+    "y": 1,
+    "activity": "fall",
+    "camera_id": "cam2",
+    "score": 0.993
+   },
+   {
+    "seq_id": "SQ0334",
+    "y": 1,
+    "activity": "fall",
+    "camera_id": "cam1",
+    "score": 0.9934
+   },
+   {
+    "seq_id": "SQ0335",
+    "y": 0,
+    "activity": "lie_bed",
+    "camera_id": "cam1",
+    "score": 0.0025
+   },
+   {
+    "seq_id": "SQ0336",
+    "y": 0,
+    "activity": "lie_bed",
+    "camera_id": "cam1",
+    "score": 0.0169
+   }
+  ]
+ },
+ "open_issues": [
+  "Pi 5 速度未實測（P17 只量本機）",
+  "EZCam 每 3 秒一張不足以餵窗口模型（P17）",
+  "SQ0084、SQ0306 待標註負責人重審",
+  "二館（poses-site2.csv）尚未評估，見 V23",
+  "P16 定版卡 approved_by 仍是「待林護理長核准」；核准紀錄目前只在 V32 設定檔",
+  "冷卻以攝影機為單位，會吞掉真跌倒（V33）",
+  "ultralytics／yolo11n-pose 是 AGPL-3.0：交付松年前由法務確認（P12）"
+ ],
+ "known_model_errors": [
+  {
+   "item": "SQ0306",
+   "kind": "誤報",
+   "score": 0.9934,
+   "why": "標註錯誤（實為跌倒），見 known_label_errors"
+  },
+  {
+   "item": "冷卻 60 秒",
+   "kind": "漏通知",
+   "why": "V33 模擬 30 晚有 10 件真跌倒被同一人 60 秒內的前一則通知吞掉"
+  }
+ ],
+ "models": [
+  {
+   "name": "fall-hgb",
+   "path": "models/fall-hgb.joblib",
+   "sha256_12": "05ba1c2d31cf",
+   "from": "P16"
+  },
+  {
+   "name": "posture-hgb",
+   "path": "models/posture-hgb.joblib",
+   "sha256_12": "bf1cd8d2ce1a",
+   "from": "V29 fall_pipeline.build_posture_model()（S01–S18、四類姿勢，只給狀態機用）"
+  },
+  {
+   "name": "yolo11n-pose",
+   "path": "models/yolo11n-pose.pt",
+   "sha256_12": "869e83fcdffd",
+   "from": "Ultralytics（AGPL-3.0）"
+  }
+ ],
+ "pipeline": {
+  "config": "V32-deploy-checklist/config/fall.yaml",
+  "cooldown_s": 60,
+  "state_machine": "V21／V22：狀態機告警一次就重置",
+  "hold_s_in_eval": 3.0,
+  "cameras": [
+   "cam1",
+   "cam2",
+   "cam3"
+  ]
+ },
+ "acceptance": {
+  "report": "V33",
+  "result": "有條件通過",
+  "per_night": "模擬 30 晚（S19–S24、門檻 0.95）：通知 14.4、誤報 3.7、漏通知 10 件／30 晚",
+  "condition": "冷卻改以人為單位（V20 追蹤編號）"
+ }
+}

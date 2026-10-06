@@ -1,0 +1,15 @@
+{
+  "generator": "tools/build_data.py",
+  "synthetic": true,
+  "files": {
+    "care/bed_pressure.csv": "64437f67e3c271fdadbab42797938969820ac22d048584946893a36287504768",
+    "care/nurse_log.csv": "81b35183cb010c89fc650d1511ddf9a45a1f3e4eeba85baf05dc09acace25de8",
+    "care/residents.csv": "02fc5f20b596530914c4ab074ec577009f321aa230b6c3f1c5189b01931d9886",
+    "care/wearable.jsonl": "c2bea746ed43769bf7ffb7bbd49c2be59d46c0d83825443d11e0c2f100db5d91",
+    "line/inspection.csv": "3b34ffee7301a04690dd21008dd69b542dbcb006bf67323a32bad026d9e034b7",
+    "line/plc_a.csv": "e06b03588467d359896d0f5c0a8fa41b87fdd5e9001cab1ef26daa0608c4ba73",
+    "line/plc_b.csv": "17dfb53f8963386555124394b0fb8f774581b75a8cdeda88abd25e6445969cf5",
+    "pose/poses-site2.csv": "cf398363302737372cd4b4068ea93083ba65000c29fc1bfb061d59086af79734",
+    "pose/poses.csv": "70a69e05d64398f9d3e6cf41cfddc5c4b924779c20272e07da060b14e00cfdf8"
+  }
+}
